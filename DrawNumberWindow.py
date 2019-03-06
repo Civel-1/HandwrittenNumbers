@@ -3,7 +3,8 @@ import PIL
 from tkinter import *
 import numpy
 
-
+# Nouvelle fenêtre permettant de dessiner un nombre à la souris
+# NE FONCTIONNE PAS
 class DrawNumberWindow:
 
     def __init__(self, interface):
@@ -14,19 +15,17 @@ class DrawNumberWindow:
         self.cv = Canvas(self.second_window, width=self.width, height=self.height, bg='white')
         self.cv.grid(row=0, column=0)
 
-        # PIL create an empty image and draw object to draw on
-        # memory only, not visible
         self.image1 = PIL.Image.new("L", (self.width, self.height))
         self.draw = ImageDraw.Draw(self.image1)
         self.cv.bind("<B1-Motion>", self.paint)
-        # PIL image can be saved as .png .jpg .gif or .bmp file (among others)
+
         button = Button(self.second_window, text="Guess", command=self.guess)
         button.grid(row=1, column=0)
         self.second_window.mainloop()
 
+    # renvoie un vecteur de 784 valeurs correspondant au dessin recadré de l'utilisateur.
     def guess(self):
         image = self.image1.resize((28, 28))
-        # PIL.Image.save('image.png', 'L')
         array = numpy.array(image.getdata(),
                     numpy.uint8).reshape(image.size[1], image.size[0], 1)
         self.interface.drawing_values = array

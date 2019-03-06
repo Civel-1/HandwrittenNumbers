@@ -14,9 +14,11 @@ import matplotlib
 
 matplotlib.use('TkAgg')
 
-
+#Classe d'interface utilisant la librairire tkinter.
 class UInterface:
 
+
+    #Mise en place des éléments graphiques de l'interface
     def __init__(self):
         self.window = Tk()
         self.window.title("Reconnaissance de nombres")
@@ -66,18 +68,24 @@ class UInterface:
 
         self.progress = ttk.Progressbar(orient="horizontal", maximum=100, mode="determinate")
         self.progress_value = 0
+
+        # Création du réseau de neurones utilisé par défaut
         self.nh = NetworkHelper.NetworkHelper(self, self.hidden_nodes_entry.get(), self.learning_rate_entry.get())
 
         self.window.mainloop()
 
+    # Méthode du bouton "Create new neural network"
+    # Recrée un nouveau réseau avec les paramètres souhaités par l'utilisateur
     def create_network(self):
         self.nh = NetworkHelper.NetworkHelper(self, self.hidden_nodes_entry.get(), self.learning_rate_entry.get())
 
+    # Méthode d'affichage des résultats à travers deux graphs en utilisant la librairie matplotlib
     def display_result(self, all_values, results, is_drawing):
-        # display results in graph and number in im
+
         numbers = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
         x_pos = [0, 1]
         y_pos = numpy.arange(len(numbers))
+        # Petite différence selon la source de l'appel. Si dessin, pas de label (et donc vecteur de 784 valeurs).
         if is_drawing:
             image_array = numpy.asfarray(all_values).reshape((28, 28))
         else:
@@ -98,6 +106,7 @@ class UInterface:
         b.axes.set_xticks(y_pos)
         b.set_xticklabels(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
 
+        # Ajout des valeurs des probabilités en haut des barres
         for r in rect:
             height = r.get_height()
             b.text(r.get_x() + r.get_width() / 2., 1.05 * height, '%.2f' % float(height),
@@ -113,18 +122,26 @@ class UInterface:
         canvas2.get_tk_widget().grid(sticky="WN", row=3, column=0)
         canvas2.draw()
 
+    # Méthode répondant au bouton "Test one"
+    # Prend aléatoirement un nombre issu du fichier de test et questionne le réseau. Appelle ensuite la fonction
+    # d'affichage des résultats
     def test_one(self):
         all_values = self.nh.get_random_value()
         results = self.nh.guess_result(all_values[1:])
         print(all_values)
         self.display_result(all_values, results, False)
 
+    # Méthode répondant au bouton "Test"
+    # Teste la totalité des nombres présents dans le fichier de test et affiche le pourventage de réussite
     def test(self):
+        # Multithreading pour ne pas gelé l'application durant le traitement.
         pool = ThreadPool(processes=1)
         self.progress.grid(row=3, column=1, sticky="W")
         async_result = pool.apply_async(self.nh.test)
         self.progress["value"] = 0
         self.window.update()
+
+        # Mise à jour de la progress bar durant le travail de fond. self.progress_value est mis à jour par le networkHelper
         while self.is_computing:
             sleep(0.25)
             self.progress["value"] = self.progress_value
@@ -134,12 +151,18 @@ class UInterface:
         self.test_result.config(text=str(results) + "% of good answers")
         self.progress.grid_forget()
 
+
+    # Méthode répondant au bouton "Train for one epoch"
+    # Apprentissage du réseau grâce aux nombres présents dans le fichier d'entraînement
     def train(self):
+        # Multithreading
         pool = ThreadPool(processes=1)
         self.progress.grid(row=3, column=1, sticky="W")
         async_result = pool.apply_async(self.nh.train)
         self.progress["value"] = 0
         self.window.update()
+
+        # Mise à jour de la progress bar durant le travail de fond. self.progress_value est mis à jour par le networkHelper
         while self.is_computing:
             sleep(0.25)
             self.progress["value"] = self.progress_value
@@ -148,21 +171,27 @@ class UInterface:
         async_result.get()
         self.progress.grid_forget()
 
+    # Méthode répondant au bouton "Draw"
+    # Ouvre une fenêtre pour dessiner à la souris un nombre
+    # --------- NE FONCTIONNE PAS ----------------
     def draw(self):
         DrawNumberWindow(self)
 
+    # Méthode répondant au bouton "Train for one epoch"
+    # Apprentissage du réseau grâce aux nombres présents dans le fichier d'entraînement
     def guess_drawing(self):
-        # temp = numpy.ravel(self.drawing_values)
 
         # From image .png issue de gimp
-        image = PIL.Image.open("image2.png", "r").resize((28, 28)).convert("L")
-        array = 255 - numpy.asarray(image).reshape(784)
+        # image = PIL.Image.open("image.png", "r").resize((28, 28)).convert("L")
+        array = 255 - self.drawing_values.reshape(784)
 
         results = self.nh.guess_result(array)
         self.display_result(array, results, True)
 
+    # Méthode qui permet d'effacer les paramètres par défauts lorsque l'utilisateur clique pour les modifier
     def delete_placeholder_hidden(self, event):
         self.hidden_nodes_entry.delete(0, END)
 
+    # Méthode qui permet d'effacer les paramètres par défauts lorsque l'utilisateur clique pour les modifier
     def delete_placeholder_learning(self, event):
         self.learning_rate_entry.delete(0, END)
